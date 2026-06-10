@@ -9,7 +9,7 @@ const tempColor = new THREE.Color()
 
 export default function ParticleSystem() {
   const meshRef = useRef<THREE.InstancedMesh>(null)
-  const particles = useSimStore(s => s.particles)
+  const particlesStore = useSimStore(s => s.particles)
   const mode = useSimStore(s => s.mode)
   const gravity = useSimStore(s => s.gravity)
   const damping = useSimStore(s => s.damping)
@@ -21,10 +21,17 @@ export default function ParticleSystem() {
   const stepSize = useSimStore(s => s.stepSize)
   const setFps = useSimStore(s => s.setFps)
   const setTotalEnergy = useSimStore(s => s.setTotalEnergy)
-  const setParticles = useSimStore(s => s.setParticles)
 
+  const particlesRef = useRef(particlesStore)
   const lastStepCounter = useRef(stepCounter)
   const shouldStep = useRef(false)
+
+  useEffect(() => {
+    particlesRef.current = particlesStore
+    if (meshRef.current) {
+      meshRef.current.instanceMatrix.needsUpdate = true
+    }
+  }, [particlesStore])
 
   useEffect(() => {
     if (stepCounter !== lastStepCounter.current) {
@@ -34,25 +41,25 @@ export default function ParticleSystem() {
   }, [stepCounter])
 
   const colorArray = useMemo(
-    () => new Float32Array(particles.length * 3),
-    [particles.length]
+    () => new Float32Array(particlesStore.length * 3),
+    [particlesStore.length]
   )
 
   useMemo(() => {
-    particles.forEach((p, i) => {
+    particlesStore.forEach((p, i) => {
       tempColor.set(p.color)
       colorArray[i * 3] = tempColor.r
       colorArray[i * 3 + 1] = tempColor.g
       colorArray[i * 3 + 2] = tempColor.b
     })
-  }, [particles, colorArray])
+  }, [particlesStore, colorArray])
 
   const fpsCounter = useRef({ frames: 0, lastTime: performance.now() })
 
   const updateParticles = (dt: number) => {
     if (!meshRef.current) return
-    const updated = applyPhysics(particles, mode, gravity, damping, bounce, attractorStrength, dt)
-    setParticles(updated)
+    const updated = applyPhysics(particlesRef.current, mode, gravity, damping, bounce, attractorStrength, dt)
+    particlesRef.current = updated
 
     let totalEnergy = 0
     updated.forEach((p, i) => {
@@ -81,7 +88,6 @@ export default function ParticleSystem() {
       updateParticles(stepDt)
     }
 
-    // FPS counter
     fpsCounter.current.frames++
     const now = performance.now()
     if (now - fpsCounter.current.lastTime > 1000) {
@@ -92,7 +98,7 @@ export default function ParticleSystem() {
   })
 
   return (
-    <instancedMesh ref={meshRef} args={[undefined, undefined, particles.length]}>
+    <instancedMesh ref={meshRef} args={[undefined, undefined, particlesStore.length]}>
       <sphereGeometry args={[1, 8, 8]}>
         <instancedBufferAttribute attach="attributes-color" args={[colorArray, 3]} />
       </sphereGeometry>
