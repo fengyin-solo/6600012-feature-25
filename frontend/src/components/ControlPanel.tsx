@@ -118,12 +118,50 @@ export default function ControlPanel() {
           🐌 慢动作
         </button>
       </div>
+
+      {/* Step Controls */}
+      <div className={`p-3 rounded-lg border ${store.paused ? 'bg-gray-800 border-blue-500' : 'bg-gray-800/50 border-gray-700 opacity-60'}`}>
+        <label className="text-xs text-gray-400 block mb-2">单步控制 {!store.paused && <span className="text-yellow-500">(暂停后可用)</span>}</label>
+        <div className="flex gap-2 mb-3">
+          <button
+            onClick={() => store.stepForward()}
+            disabled={!store.paused}
+            className={`flex-1 py-2 rounded font-medium text-sm transition ${
+              store.paused
+                ? 'bg-blue-600 hover:bg-blue-500 text-white'
+                : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            ⏭ 前进一帧
+          </button>
+        </div>
+        <div>
+          <label className="text-xs text-gray-400">步长: {store.stepSize.toFixed(1)} 帧</label>
+          <input
+            type="range"
+            min={0.1}
+            max={10}
+            step={0.1}
+            value={store.stepSize}
+            onChange={e => store.setParam('stepSize', Number(e.target.value))}
+            className="w-full accent-blue-500"
+          />
+        </div>
+      </div>
+
       <button
         onClick={() => store.reset()}
         className="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm"
       >
         🔄 重置粒子
       </button>
+
+      {/* Keyboard Shortcuts */}
+      <div className="text-xs text-gray-500 mt-2 p-2 bg-gray-800/50 rounded">
+        <p className="font-medium text-gray-400 mb-1">快捷键:</p>
+        <p>空格键: 暂停/继续</p>
+        <p>→: 前进一帧</p>
+      </div>
     </div>
   )
 }

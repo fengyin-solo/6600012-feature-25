@@ -18,6 +18,7 @@ export interface SimulationParams {
   attractorStrength: number
   slowMotion: boolean
   paused: boolean
+  stepSize: number
 }
 
 export interface Preset {

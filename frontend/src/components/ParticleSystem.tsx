@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react'
+import { useRef, useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useSimStore } from '../store/simulation'
@@ -17,8 +17,21 @@ export default function ParticleSystem() {
   const attractorStrength = useSimStore(s => s.attractorStrength)
   const slowMotion = useSimStore(s => s.slowMotion)
   const paused = useSimStore(s => s.paused)
+  const stepCounter = useSimStore(s => s.stepCounter)
+  const stepSize = useSimStore(s => s.stepSize)
   const setFps = useSimStore(s => s.setFps)
   const setTotalEnergy = useSimStore(s => s.setTotalEnergy)
+  const setParticles = useSimStore(s => s.setParticles)
+
+  const lastStepCounter = useRef(stepCounter)
+  const shouldStep = useRef(false)
+
+  useEffect(() => {
+    if (stepCounter !== lastStepCounter.current) {
+      lastStepCounter.current = stepCounter
+      shouldStep.current = true
+    }
+  }, [stepCounter])
 
   const colorArray = useMemo(
     () => new Float32Array(particles.length * 3),
@@ -36,10 +49,10 @@ export default function ParticleSystem() {
 
   const fpsCounter = useRef({ frames: 0, lastTime: performance.now() })
 
-  useFrame((_, delta) => {
-    if (!meshRef.current || paused) return
-    const dt = slowMotion ? delta * 0.1 : delta
+  const updateParticles = (dt: number) => {
+    if (!meshRef.current) return
     const updated = applyPhysics(particles, mode, gravity, damping, bounce, attractorStrength, dt)
+    setParticles(updated)
 
     let totalEnergy = 0
     updated.forEach((p, i) => {
@@ -53,6 +66,20 @@ export default function ParticleSystem() {
 
     meshRef.current.instanceMatrix.needsUpdate = true
     setTotalEnergy(totalEnergy)
+  }
+
+  useFrame((_, delta) => {
+    if (!meshRef.current) return
+
+    const dt = slowMotion ? delta * 0.1 : delta
+
+    if (!paused) {
+      updateParticles(dt)
+    } else if (shouldStep.current) {
+      shouldStep.current = false
+      const stepDt = (1 / 60) * stepSize
+      updateParticles(stepDt)
+    }
 
     // FPS counter
     fpsCounter.current.frames++

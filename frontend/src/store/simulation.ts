@@ -26,13 +26,16 @@ interface SimStore extends SimulationParams {
   particles: Particle[]
   fps: number
   totalEnergy: number
+  stepCounter: number
   setMode: (mode: SimMode) => void
   setParticleCount: (count: number) => void
   setParam: <K extends keyof SimulationParams>(key: K, value: SimulationParams[K]) => void
+  setParticles: (particles: Particle[]) => void
   reset: () => void
   setFps: (fps: number) => void
   setTotalEnergy: (e: number) => void
   applyPreset: (preset: Partial<SimulationParams>) => void
+  stepForward: () => void
 }
 
 export const useSimStore = create<SimStore>((set, get) => ({
@@ -44,9 +47,11 @@ export const useSimStore = create<SimStore>((set, get) => ({
   attractorStrength: 5,
   slowMotion: false,
   paused: false,
+  stepSize: 1,
   particles: randomParticles(300),
   fps: 0,
   totalEnergy: 0,
+  stepCounter: 0,
   setMode: (mode) => set({ mode }),
   setParticleCount: (count) => set({ particleCount: count, particles: randomParticles(count) }),
   setParam: (key, value) => set({ [key]: value } as any),
@@ -56,9 +61,11 @@ export const useSimStore = create<SimStore>((set, get) => ({
   },
   setFps: (fps) => set({ fps }),
   setTotalEnergy: (e) => set({ totalEnergy: e }),
+  setParticles: (particles) => set({ particles }),
   applyPreset: (preset) => {
     set({ ...preset } as any)
     const { particleCount } = get()
     set({ particles: randomParticles(particleCount) })
   },
+  stepForward: () => set(state => ({ stepCounter: state.stepCounter + 1 })),
 }))

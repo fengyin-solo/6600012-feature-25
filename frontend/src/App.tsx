@@ -1,11 +1,35 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Stars } from '@react-three/drei'
 import ParticleSystem from './components/ParticleSystem'
 import ControlPanel from './components/ControlPanel'
 import StatsOverlay from './components/StatsOverlay'
+import { useSimStore } from './store/simulation'
 
 export default function App() {
+  const setParam = useSimStore(s => s.setParam)
+  const stepForward = useSimStore(s => s.stepForward)
+  const paused = useSimStore(s => s.paused)
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement) return
+
+      if (e.code === 'Space') {
+        e.preventDefault()
+        setParam('paused', !paused)
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault()
+        if (paused) {
+          stepForward()
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [setParam, stepForward, paused])
+
   return (
     <div className="flex w-full h-full">
       <div className="flex-1 relative">
